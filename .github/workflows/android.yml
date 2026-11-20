@@ -25,6 +25,12 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
+      - name: Add original audio and app image if supplied
+        run: |
+          if [ -f antel-audio-assets.zip ]; then
+            unzip -o antel-audio-assets.zip -d .
+          fi
+
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
