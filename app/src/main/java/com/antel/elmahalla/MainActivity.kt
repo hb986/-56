@@ -2,17 +2,15 @@ package com.antel.elmahalla
 
 import android.media.MediaPlayer
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +38,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val availableSounds = sounds.filter {
+            resources.getIdentifier(it.resourceName, "raw", packageName) != 0
+        }
         setContent {
             val green = Color(0xFF245B24)
             val bright = Color(0xFF75C843)
@@ -58,7 +59,7 @@ class MainActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        itemsIndexed(sounds) { _, sound ->
+                        items(availableSounds) { sound ->
                             Button(
                                 onClick = { play(sound) },
                                 modifier = Modifier.fillMaxWidth().height(88.dp),
@@ -70,7 +71,9 @@ class MainActivity : ComponentActivity() {
                         }
                         item {
                             Button(
-                                onClick = { play(sounds[Random.nextInt(sounds.size)]) },
+                                onClick = {
+                                    if (availableSounds.isNotEmpty()) play(availableSounds[Random.nextInt(availableSounds.size)])
+                                },
                                 modifier = Modifier.fillMaxWidth().height(88.dp),
                                 shape = RoundedCornerShape(18.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD54F), contentColor = Color(0xFF342500))
@@ -84,10 +87,7 @@ class MainActivity : ComponentActivity() {
 
     private fun play(sound: Sound) {
         val id = resources.getIdentifier(sound.resourceName, "raw", packageName)
-        if (id == 0) {
-            Toast.makeText(this, "ملف الصوت ${sound.title} لم يُضف للمشروع بعد", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (id == 0) return
         player?.let {
             try { it.stop() } catch (_: IllegalStateException) {}
             it.release()
