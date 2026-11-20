@@ -20,34 +20,30 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Gradle and cache dependencies
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.10.2"
-
-      - name: Install original audio and app icon
+      - name: Install Gradle and available original audio
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p app/src/main/res/raw app/src/main/res/drawable-nodpi
-          required=(zabo_kebir batandora_elhamra fokhany wahed sayek betengany_adim maleh zabri_manga almani)
-          missing=0
-          for name in "${required[@]}"; do
-            if [ ! -f "${name}.mp3" ]; then
-              echo "::error::Missing original audio file: ${name}.mp3 (upload it to the repository root)"
-              missing=1
-            else
+          sounds=(zabo_kebir batandora_elhamra fokhany wahed sayek betengany_adim maleh zabri_manga almani)
+          copied=0
+          for name in "${sounds[@]}"; do
+            if [ -f "${name}.mp3" ]; then
               cp "${name}.mp3" "app/src/main/res/raw/${name}.mp3"
+              echo "Added original audio: ${name}.mp3"
+              copied=$((copied + 1))
+            else
+              echo "::warning::Optional audio missing: ${name}.mp3 — app will build without this button"
             fi
           done
-          if [ ! -f frog.jpg ]; then
-            echo "::error::Missing frog.jpg app icon (upload it to the repository root)"
-            missing=1
-          else
-            cp frog.jpg app/src/main/res/drawable-nodpi/frog.jpg
-          fi
-          if [ "$missing" -ne 0 ]; then
+          if [ "$copied" -eq 0 ]; then
+            echo "::error::No MP3 audio files were found in the repository root."
             exit 1
+          fi
+          if [ -f frog.jpg ]; then
+            cp frog.jpg app/src/main/res/drawable-nodpi/frog.jpg
+          else
+            echo "::warning::frog.jpg is missing; app will use its built-in frog emoji header"
           fi
 
       - name: Build debug APK
