@@ -2,6 +2,7 @@ package com.antel.elmahalla
 
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -21,24 +22,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.random.Random
 
-private data class Sound(val title: String, val resourceId: Int)
+private data class Sound(val title: String, val resourceName: String)
 
 class MainActivity : ComponentActivity() {
     private var player: MediaPlayer? = null
-
-    private val sounds by lazy {
-        listOf(
-            Sound("زبو كبير", R.raw.zabo_kebir),
-            Sound("البندوره الحمره", R.raw.batandora_elhamra),
-            Sound("فكهانيوبحبالفاكهه", R.raw.fokhany),
-            Sound("واحد", R.raw.wahed),
-            Sound("سايق", R.raw.sayek),
-            Sound("بتنجاني قديم", R.raw.betengany_adim),
-            Sound("مالح", R.raw.maleh),
-            Sound("ظبريمنجا", R.raw.zabri_manga),
-            Sound("الالماني يا يونايتد عملت", R.raw.almani)
-        )
-    }
+    private val sounds = listOf(
+        Sound("زبو كبير", "zabo_kebir"),
+        Sound("البندوره الحمره", "batandora_elhamra"),
+        Sound("فكهانيوبحبالفاكهه", "fokhany"),
+        Sound("واحد", "wahed"),
+        Sound("سايق", "sayek"),
+        Sound("بتنجاني قديم", "betengany_adim"),
+        Sound("مالح", "maleh"),
+        Sound("ظبريمنجا", "zabri_manga"),
+        Sound("الالماني يا يونايتد عملت", "almani")
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,9 +58,9 @@ class MainActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        itemsIndexed(sounds) { index, sound ->
+                        itemsIndexed(sounds) { _, sound ->
                             Button(
-                                onClick = { play(sound.resourceId) },
+                                onClick = { play(sound) },
                                 modifier = Modifier.fillMaxWidth().height(88.dp),
                                 shape = RoundedCornerShape(18.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = bright, contentColor = Color(0xFF102B10))
@@ -72,7 +70,7 @@ class MainActivity : ComponentActivity() {
                         }
                         item {
                             Button(
-                                onClick = { play(sounds[Random.nextInt(sounds.size)].resourceId) },
+                                onClick = { play(sounds[Random.nextInt(sounds.size)]) },
                                 modifier = Modifier.fillMaxWidth().height(88.dp),
                                 shape = RoundedCornerShape(18.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD54F), contentColor = Color(0xFF342500))
@@ -84,12 +82,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun play(resourceId: Int) {
+    private fun play(sound: Sound) {
+        val id = resources.getIdentifier(sound.resourceName, "raw", packageName)
+        if (id == 0) {
+            Toast.makeText(this, "ملف الصوت ${sound.title} لم يُضف للمشروع بعد", Toast.LENGTH_SHORT).show()
+            return
+        }
         player?.let {
             try { it.stop() } catch (_: IllegalStateException) {}
             it.release()
         }
-        player = MediaPlayer.create(this, resourceId)?.apply {
+        player = MediaPlayer.create(this, id)?.apply {
             setOnCompletionListener { mp ->
                 mp.release()
                 if (player === mp) player = null
