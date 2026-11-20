@@ -1,7 +1,6 @@
 package com.antel.elmahalla
 
-import android.media.AudioManager
-import android.media.ToneGenerator
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,17 +21,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.random.Random
 
-private val sounds = listOf(
-    "زبو كبير", "البندوره الحمره", "فكهانيوبحبالفاكهه",
-    "واحد", "سايق", "بتنجاني قديم", "مالح", "ظبريمنجا",
-    "الالماني يا يونايتد عملت"
-)
+private data class Sound(val title: String, val resourceId: Int)
 
 class MainActivity : ComponentActivity() {
-    private var tone: ToneGenerator? = null
+    private var player: MediaPlayer? = null
+
+    private val sounds by lazy {
+        listOf(
+            Sound("زبو كبير", R.raw.zabo_kebir),
+            Sound("البندوره الحمره", R.raw.batandora_elhamra),
+            Sound("فكهانيوبحبالفاكهه", R.raw.fokhany),
+            Sound("واحد", R.raw.wahed),
+            Sound("سايق", R.raw.sayek),
+            Sound("بتنجاني قديم", R.raw.betengany_adim),
+            Sound("مالح", R.raw.maleh),
+            Sound("ظبريمنجا", R.raw.zabri_manga),
+            Sound("الالماني يا يونايتد عملت", R.raw.almani)
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        tone = ToneGenerator(AudioManager.STREAM_MUSIC, 90)
         setContent {
             val green = Color(0xFF245B24)
             val bright = Color(0xFF75C843)
@@ -51,47 +60,53 @@ class MainActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        itemsIndexed(sounds) { index, name ->
+                        itemsIndexed(sounds) { index, sound ->
                             Button(
-                                onClick = { play(index) },
+                                onClick = { play(sound.resourceId) },
                                 modifier = Modifier.fillMaxWidth().height(88.dp),
                                 shape = RoundedCornerShape(18.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = bright, contentColor = Color(0xFF102B10))
                             ) {
-                                Text(name, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                                Text(sound.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                             }
                         }
                         item {
                             Button(
-                                onClick = { play(Random.nextInt(sounds.size)) },
+                                onClick = { play(sounds[Random.nextInt(sounds.size)].resourceId) },
                                 modifier = Modifier.fillMaxWidth().height(88.dp),
                                 shape = RoundedCornerShape(18.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD54F), contentColor = Color(0xFF342500))
                             ) { Text("🎲 صوت عشوائي", fontSize = 16.sp, fontWeight = FontWeight.Black) }
                         }
                     }
-                    Text("نسخة تجريبية — ملفات MP3 الأصلية تُضاف في مجلد app/src/main/res/raw",
-                        color = Color(0xFFCBE7C0), fontSize = 11.sp, textAlign = TextAlign.Center)
                 }
             }
         }
     }
 
-    private fun play(index: Int) {
-        val patterns = intArrayOf(
-            ToneGenerator.TONE_PROP_BEEP, ToneGenerator.TONE_PROP_ACK,
-            ToneGenerator.TONE_PROP_NACK, ToneGenerator.TONE_DTMF_1,
-            ToneGenerator.TONE_DTMF_2, ToneGenerator.TONE_DTMF_3,
-            ToneGenerator.TONE_DTMF_4, ToneGenerator.TONE_DTMF_5,
-            ToneGenerator.TONE_DTMF_6
-        )
-        tone?.stopTone()
-        tone?.startTone(patterns[index.coerceIn(0, patterns.lastIndex)], 450)
+    private fun play(resourceId: Int) {
+        player?.let {
+            try { it.stop() } catch (_: IllegalStateException) {}
+            it.release()
+        }
+        player = MediaPlayer.create(this, resourceId)?.apply {
+            setOnCompletionListener { mp ->
+                mp.release()
+                if (player === mp) player = null
+            }
+            start()
+        }
+    }
+
+    override fun onStop() {
+        player?.release()
+        player = null
+        super.onStop()
     }
 
     override fun onDestroy() {
-        tone?.release()
-        tone = null
+        player?.release()
+        player = null
         super.onDestroy()
     }
 }
