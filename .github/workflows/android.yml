@@ -25,10 +25,29 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
-      - name: Add original audio and app image if supplied
+      - name: Install original audio and app icon
+        shell: bash
         run: |
-          if [ -f antel-audio-assets.zip ]; then
-            unzip -o antel-audio-assets.zip -d .
+          set -euo pipefail
+          mkdir -p app/src/main/res/raw app/src/main/res/drawable-nodpi
+          required=(zabo_kebir batandora_elhamra fokhany wahed sayek betengany_adim maleh zabri_manga almani)
+          missing=0
+          for name in "${required[@]}"; do
+            if [ ! -f "${name}.mp3" ]; then
+              echo "::error::Missing original audio file: ${name}.mp3 (upload it to the repository root)"
+              missing=1
+            else
+              cp "${name}.mp3" "app/src/main/res/raw/${name}.mp3"
+            fi
+          done
+          if [ ! -f frog.jpg ]; then
+            echo "::error::Missing frog.jpg app icon (upload it to the repository root)"
+            missing=1
+          else
+            cp frog.jpg app/src/main/res/drawable-nodpi/frog.jpg
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
           fi
 
       - name: Build debug APK
